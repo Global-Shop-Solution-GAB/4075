@@ -1,0 +1,448 @@
+Program.Sub.ScreenSU.Start
+gui.F_Main..create
+gui.F_Main..caption("Processing GAX File")
+gui.F_Main..size(6030,1065)
+gui.F_Main..position(0,0)
+gui.F_Main..event(unload,f_main_unload)
+gui.F_Main..alwaysontop(False)
+gui.F_Main..fontname("Arial")
+gui.F_Main..fontsize(8)
+gui.F_Main..forecolor(0)
+gui.F_Main..fontstyle(,,,,)
+gui.F_Main..BackColor(-2147483633)
+gui.F_Main..controlbox(True)
+gui.F_Main..maxbutton(False)
+gui.F_Main..minbutton(False)
+gui.F_Main..mousepointer(0)
+gui.F_Main..moveable(True)
+gui.F_Main..sizeable(False)
+gui.F_Main..ShowInTaskBar(True)
+gui.F_Main..titlebar(True)
+gui.F_Main.pbX.create(progressbar)
+gui.F_Main.pbX.visible(True)
+gui.F_Main.pbX.size(5460,255)
+gui.F_Main.pbX.zorder(0)
+gui.F_Main.pbX.position(200,100)
+gui.F_Main.pbX.enabled(True)
+
+
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Program.Sub.Definition.DefaultArgs("process","sFile")
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Modified by: BCC
+'8/11/2015
+'Added additional nodes to XML
+'Node - vendInvNo   864514511056586216548513621554
+'Value-640-669
+'
+'Node-vendInvLnNo   LINENUMBER
+'Value-670-679
+'
+'Node-vendInvDt   5621654897616548975615
+'Value-680-702
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+V.Local.sret.Declare(String)
+V.Local.bret.Declare(Boolean)
+V.Local.sFile.Declare(String)
+
+F.Intrinsic.UI.ShowOpenFileDialog("","",V.Caller.FilesDir,V.Local.sret)
+
+F.Intrinsic.Control.If(V.Local.sret.trim,<>,"")
+	F.Intrinsic.File.Exists(V.Local.sret,V.Local.bret)
+	F.intrinsic.control.if(V.local.bret,=,True)
+		F.Intrinsic.File.File2String(V.Local.sret,V.Local.sFile)
+		F.Intrinsic.Control.CallSub(Process,"sFile",V.Local.sFile)
+		F.Intrinsic.Control.end
+	F.Intrinsic.control.EndIf
+F.Intrinsic.Control.endif
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: ATG_4075_GAX_CONVERT.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(F_main_unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Main.End
+
+Program.Sub.process.Start
+F.Intrinsic.Control.SetErrorHandler("process_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sLines.Declare(String)
+V.Local.sLine.Declare(String)
+V.Local.iC.Declare(Long)
+V.Local.iX.Declare(Long)
+
+V.Local.ipos.Declare(Long)
+V.Local.iLen.Declare(Long)
+V.Local.sType.Declare(String)
+
+V.Local.sRoot.Declare(String)
+V.Local.sDoc.Declare(String)
+V.Local.sDoc.Redim(-1,-1)
+V.Local.iDoc.Declare(Long)
+V.Local.iDoc.Set(-1)
+V.Local.sDate.Declare(String)
+V.Local.bVendOpen.Declare(Boolean)
+V.Local.sInfo.Declare(String)
+V.Local.sNode.Declare(String)
+V.Local.sName.Declare(String)
+V.Local.sNodeVend.Declare(String)
+V.Local.sNodeActg.Declare(String)
+V.Local.sSubNode.Declare(String)
+V.Local.sVend.Declare(String)
+V.Local.sHoldValue.Declare(String)
+V.Local.sAttribute.Declare(String)
+V.Local.sFile.Declare(String)
+V.Local.sStringFile.Declare(String)
+V.Local.sHold.Declare(String)
+V.Local.sHold.Redim(0,1)
+V.Local.iPb.Declare(Long)
+
+Gui.F_Main..Show
+
+Gui.F_Main.pbX.Value(0)
+F.Intrinsic.String.Split(V.Args.sFile,V.Ambient.NewLine,V.Local.sLines)
+F.Intrinsic.Math.Add(V.Local.sLines.UBound,1,V.local.ipb)
+Gui.F_Main.pbX.Max(V.Local.ipb)
+V.Local.iPb.Set(0)
+F.Intrinsic.Control.For(V.Local.iC,V.Local.sLines.LBound,V.Local.sLines.UBound,1)
+	F.Intrinsic.string.mid(V.local.slines(v.local.ic),37,1,V.Local.sType)
+	F.Intrinsic.Control.If(V.Local.iPb,>=,V.Local.sLines.UBound)
+		V.Local.iPb.Set(0)
+	F.Intrinsic.control.EndIf
+	F.Intrinsic.Math.Add(V.Local.iPb,1,V.Local.iPb)
+	Gui.F_Main.pbX.Value(V.Local.iPb)
+
+	F.Intrinsic.Control.If(V.Local.sType,=,"1")
+
+		F.Intrinsic.Control.If(V.Local.sNodeVend,<>,"")
+			F.Global.xml.appendnode(V.Local.sDoc(v.Local.iDoc),V.Local.snode,V.Local.sNodeVend)
+			F.Global.xml.appendTextnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeVend,V.Ambient.NewLine)
+			F.Global.xml.destroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeVend)
+			V.Local.sNodeVend.Set("")
+		F.Intrinsic.Control.endif
+		F.Intrinsic.Control.If(V.Local.sNode,<>,"")
+			F.Global.xml.appendnodetoroot(V.Local.sDoc(v.Local.iDoc),V.Local.sNode)
+			F.Global.xml.appendTextnode(V.Local.sDoc(v.Local.iDoc),"root",V.Ambient.NewLine)
+			F.Global.xml.destroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sNode)
+			V.Local.sNode.Set("")
+		F.Intrinsic.Control.endif
+		F.Intrinsic.Control.If(V.Local.sDoc.UBound,=,-1)
+			V.Local.sDoc.Redim(0,0)
+			V.Local.iDoc.Set(0)
+		F.Intrinsic.Control.ElseIf(V.Local.sDoc.UBound,<>,-1)
+			F.Intrinsic.Math.Add(V.Local.iDoc,1,V.Local.iDoc)
+			V.Local.sDoc.RedimPreserve(0,V.local.iDoc)
+		F.Intrinsic.Control.endif
+		F.Intrinsic.String.Format(V.Ambient.Date,"YYYYMMDD",V.Local.sDate)
+		F.Intrinsic.String.Concat("IPI_GAX_",V.local.sDate,"_",V.Local.idoc,".xml",V.Local.sdoc(v.Local.iDoc))
+		F.global.XML.createDocument(V.Local.sdoc(v.Local.iDoc),False,True,False,False)
+		V.Local.sRoot.Set("I3Financial")
+		F.Global.xml.setRoot(V.Local.sDoc(v.Local.iDoc),V.Local.sroot)
+		'set attributes
+	'	F.Intrinsic.Control.CallSub(Setattributeroot,"start",156,"len",8,"attribute","xmlns","line","http://das.ite.iowa.gov","doc",V.Local.sDoc(v.Local.iDoc))
+		F.Intrinsic.Control.CallSub(Setattributeroot,"start",164,"len",8,"attribute","xmlns:xsi","line","http://www.w3.org/2001/XMLSchema-instance","doc",V.Local.sDoc(v.Local.iDoc))
+		F.Intrinsic.Control.CallSub(Setattributeroot,"start",172,"len",8,"attribute","xsi:schemaLocation","line","http://das.ite.iowa.gov I3FinancialGAX.xsd ","doc",V.Local.sDoc(v.Local.iDoc))
+
+		V.Local.sNode.Set("I3GeneralAccountingExpenditure")
+		F.Global.xml.createelementNode(V.local.sdoc(V.Local.iDoc),V.Local.sNode,"")
+		F.Intrinsic.Control.CallSub(Setattribute,"start",184,"len",20,"attribute","docId","line",V.Local.sLines(v.local.ic),"doc",V.Local.sDoc(v.Local.iDoc),"node",V.Local.sNode)
+		F.Intrinsic.Control.CallSub(Setattribute,"start",156,"len",8,"attribute","docCat","line",V.local.slines(v.local.ic),"doc",V.Local.sDoc(v.Local.iDoc),"node",V.Local.sNode)
+		F.Intrinsic.Control.CallSub(Setattribute,"start",164,"len",8,"attribute","docType","line",V.Local.sLines(v.local.ic),"doc",V.Local.sDoc(v.Local.iDoc),"node",V.Local.sNode)
+		F.Intrinsic.Control.CallSub(Setattribute,"start",172,"len",8,"attribute","docCd","line",V.Local.sLines(v.local.ic),"doc",V.Local.sDoc(v.Local.iDoc),"node",V.Local.sNode)
+		F.Intrinsic.Control.CallSub(Setattribute,"start",180,"len",4,"attribute","docDeptCd","line",V.Local.sLines(v.local.ic),"doc",V.Local.sDoc(v.Local.iDoc),"node",V.Local.sNode)
+		F.Intrinsic.Control.CallSub(Setattribute,"start",264,"len",60,"attribute","docDscr","line",V.Local.sLines(v.local.ic),"doc",V.Local.sDoc(v.Local.iDoc),"node",V.Local.sNode)
+		
+		F.Global.xml.createAttributeNode(V.local.sdoc(V.Local.iDoc),"schemaVersion","1.0")
+		F.Global.xml.setattributetonode(V.local.sdoc(V.Local.iDoc),V.Local.snode,"schemaVersion")
+		F.Global.xml.destroyNode(V.local.sdoc(V.Local.iDoc),"schemaVersion")
+		F.Global.XML.AppendNodeToRoot(V.Local.sDoc(v.Local.iDoc),V.Local.sNode)
+	F.Intrinsic.control.elseif(V.Local.sType,=,"3")
+		'Vendor information if vendor is set to something then close last vendor
+		'destroy root set vendor information as root
+		F.Intrinsic.Control.If(V.Local.sNodeVend,<>,"")
+			F.Global.xml.appendnode(V.Local.sDoc(v.Local.iDoc),V.Local.snode,V.Local.sNodeVend)
+			F.Global.xml.appendTextnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNode,V.Ambient.NewLine)
+			F.Global.xml.destroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeVend)
+			V.Local.sNodeVend.Set("")
+		F.Intrinsic.Control.endif
+		V.Local.sNodeVend.Set("absDocVend")
+		F.Global.xml.createElementNode(V.Local.sDoc(v.Local.idoc),V.Local.sNodeVend,"")
+		V.Local.sSubNode.Set("vendCustCd")
+				
+		'F.Intrinsic.string.Mid(V.Local.sLines(v.Local.iC),228,20,V.Local.sHoldValue)
+		F.Intrinsic.string.Mid(V.Local.sLines(v.Local.iC),1546,11,V.Local.sHoldValue)
+
+		F.Global.xml.createElementNode(V.Local.sDoc(v.local.iDoc),V.Local.sSubNode,V.Local.sHoldValue.trim)
+		F.Global.xml.appendnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeVend,V.Local.sSubNode)
+		F.Global.xml.appendTextnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeVend,V.Ambient.NewLine)
+
+		F.Global.xml.destroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sSubNode)
+
+	F.Intrinsic.Control.Elseif(V.Local.sType,=,"5")
+		'add line information to xml file
+		F.Intrinsic.Control.If(V.Local.sNodeActg,<>,"")
+			
+		F.Intrinsic.Control.endif
+		V.Local.sNodeActg.Set("absDocActg")
+		F.Global.xml.createElementNode(V.Local.sDoc(v.Local.idoc),V.Local.sNodeActg,"")
+
+		V.Local.sSubNode.Set("lnAm")
+		F.Intrinsic.string.Mid(V.Local.sLines(v.Local.iC),267,14,V.Local.sHoldValue)
+		F.Intrinsic.String.Right(V.Local.sholdvalue,2,V.Local.sHold(1))
+		F.Intrinsic.String.Left(V.Local.sHoldValue,12,V.Local.sHold(0))
+		F.Intrinsic.String.Concat(V.Local.sHold(0),".",V.Local.sHold(1),V.Local.sHoldValue)
+		F.Global.xml.createElementNode(V.Local.sDoc(v.local.iDoc),V.Local.sSubNode,V.Local.sHoldValue.trim)
+		F.Global.xml.appendnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Local.sSubNode)
+		F.Global.xml.appendTextnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Ambient.NewLine)
+		F.Global.xml.destroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sSubNode)
+
+		V.Local.sSubNode.Set("fundCd")
+		F.Intrinsic.string.Mid(V.Local.sLines(v.Local.iC),353,4,V.Local.sHoldValue)
+		F.Global.xml.createElementNode(V.Local.sDoc(v.local.iDoc),V.Local.sSubNode,V.Local.sHoldValue.trim)
+		F.Global.xml.appendnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Local.sSubNode)
+		F.Global.xml.appendTextnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Ambient.NewLine)
+		F.Global.xml.destroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sSubNode)
+
+		V.Local.sSubNode.Set("objCd")
+		F.Intrinsic.string.Mid(V.Local.sLines(v.Local.iC),361,4,V.Local.sHoldValue)
+		F.Global.xml.createElementNode(V.Local.sDoc(v.local.iDoc),V.Local.sSubNode,V.Local.sHoldValue.trim)
+		F.Global.xml.appendnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Local.sSubNode)
+		F.Global.xml.appendTextnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Ambient.NewLine)
+		F.Global.xml.destroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sSubNode)
+
+		V.Local.sSubNode.Set("deptCd")
+		F.Intrinsic.string.Mid(V.Local.sLines(v.Local.iC),393,4,V.Local.sHoldValue)
+		F.Global.xml.createElementNode(V.Local.sDoc(v.local.iDoc),V.Local.sSubNode,V.Local.sHoldValue.trim)
+		F.Global.xml.appendnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Local.sSubNode)
+		F.Global.xml.appendTextnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Ambient.NewLine)
+		F.Global.xml.destroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sSubNode)
+
+		V.Local.sSubNode.Set("unitCd")
+		F.Intrinsic.string.Mid(V.Local.sLines(v.Local.iC),397,4,V.Local.sHoldValue)
+		F.Global.xml.createElementNode(V.Local.sDoc(v.local.iDoc),V.Local.sSubNode,V.Local.sHoldValue.trim)
+		F.Global.xml.appendnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Local.sSubNode)
+		F.Global.xml.appendTextnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Ambient.NewLine)
+
+		F.Global.xml.destroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sSubNode)
+		
+		F.Intrinsic.string.Mid(V.Local.sLines(v.Local.iC),486,100,V.Local.sHoldValue)
+		F.Intrinsic.Control.If(V.Local.sHoldValue.Trim,<>,"")
+			V.Local.sSubNode.Set("actgLnDscr")
+			F.global.xml.createElementNode(V.Local.sDoc(v.local.iDoc),V.Local.sSubNode,V.Local.sHoldValue.trim)
+			F.global.xml.appendnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Local.sSubNode)
+			F.Global.xml.appendTextnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Ambient.NewLine)
+			F.Global.xml.destroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sSubNode)
+		F.Intrinsic.Control.EndIf
+
+		'F.Intrinsic.string.Mid(V.Local.sLines(v.Local.iC),586,4,V.Local.sHoldValue)
+		'F.Intrinsic.Control.If(V.Local.sHoldValue.Trim,<>,"")
+			V.Local.sSubNode.Set("evntTypId")
+			V.Local.sHoldValue.Set("AP01")
+			F.Global.xml.createElementNode(V.Local.sDoc(v.local.iDoc),V.Local.sSubNode,V.Local.sHoldValue.trim)
+			F.Global.xml.appendnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Local.sSubNode)
+			F.Global.xml.appendTextnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Ambient.NewLine)
+
+			F.Global.xml.destroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sSubNode)
+'		F.Intrinsic.Control.EndIf
+
+'		VendInvNo
+		F.Intrinsic.String.Mid(V.Local.sLines(v.Local.iC),644,30,V.Local.sHoldValue)
+		F.Intrinsic.Control.If(V.Local.sHoldValue.Trim,<>,"")
+			V.Local.sSubNode.Set("vendInvNo")
+			F.Global.XML.CreateElementNode(V.Local.sDoc(V.Local.iDoc),V.Local.sSubNode,V.Local.sHoldValue.Trim)
+			F.Global.xml.appendnode(V.Local.sDoc(V.Local.iDoc),V.Local.sNodeActg,V.Local.sSubNode)
+			F.Global.XML.AppendTextNode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Ambient.NewLine)
+			F.Global.xml.DestroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sSubNode)
+		F.Intrinsic.Control.EndIf
+
+'		VdInvLnNo
+		F.Intrinsic.String.Mid(V.Local.sLines(v.Local.iC),674,10,V.Local.sHoldValue)
+		F.Intrinsic.Control.If(V.Local.sHoldValue.Trim,<>,"")
+			V.Local.sSubNode.Set("vdInvLnNo")
+			F.Global.XML.CreateElementNode(V.Local.sDoc(V.Local.iDoc),V.Local.sSubNode,V.Local.sHoldValue.Trim)
+			F.Global.xml.appendnode(V.Local.sDoc(V.Local.iDoc),V.Local.sNodeActg,V.Local.sSubNode)
+			F.Global.XML.AppendTextNode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Ambient.NewLine)
+			F.Global.xml.DestroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sSubNode)
+		F.Intrinsic.Control.EndIf
+
+'		VendInvDt
+		F.Intrinsic.String.Mid(V.Local.sLines(v.Local.iC),684,23,V.Local.sHoldValue)
+		F.Intrinsic.Control.If(V.Local.sHoldValue.Trim,<>,"")
+			V.Local.sSubNode.Set("vendInvDt")
+			F.Global.XML.CreateElementNode(V.Local.sDoc(V.Local.iDoc),V.Local.sSubNode,V.Local.sHoldValue.Trim)
+			F.Global.xml.appendnode(V.Local.sDoc(V.Local.iDoc),V.Local.sNodeActg,V.Local.sSubNode)
+			F.Global.XML.AppendTextNode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Ambient.NewLine)
+			F.Global.xml.DestroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sSubNode)
+		F.Intrinsic.Control.EndIf
+
+		F.Intrinsic.string.Mid(V.Local.sLines(v.Local.iC),715,4,V.Local.sHoldValue)
+		F.Intrinsic.Control.If(V.Local.sHoldValue.Trim,<>,"")
+			V.Local.sSubNode.Set("sunitCd")
+			F.Global.xml.createElementNode(V.Local.sDoc(v.local.iDoc),V.Local.sSubNode,V.Local.sHoldValue.trim)
+			F.Global.xml.appendnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Local.sSubNode)
+			F.Global.xml.appendTextnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg,V.Ambient.NewLine)
+			F.Global.xml.destroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sSubNode)
+		F.Intrinsic.Control.endif
+		F.Global.xml.appendnode(V.Local.sDoc(v.Local.iDoc),V.Local.snodeVend,V.Local.sNodeActg)
+		F.Global.xml.destroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg)
+		V.Local.sNodeactg.Set("")
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Next(V.Local.iC)
+Gui.F_Main.pbX.Value(0)
+'close off any outstanding nodes
+
+F.Intrinsic.Control.If(V.Local.sNodeActg,<>,"")
+	F.Global.xml.appendnode(V.Local.sDoc(v.Local.iDoc),V.Local.snodeVend,V.Local.sNodeActg)
+	F.Global.xml.destroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeActg)
+	V.Local.sNodeactg.Set("")
+
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.If(V.Local.sNodeVend,<>,"")
+	F.Global.xml.appendnode(V.Local.sDoc(v.Local.iDoc),V.Local.snode,V.Local.sNodeVend)
+	F.Global.xml.appendTextnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNode,V.Ambient.NewLine)
+	F.Global.xml.destroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sNodeVend)
+	V.Local.sNodeVend.Set("")
+F.Intrinsic.Control.endif
+F.Intrinsic.Control.If(V.Local.sNode,<>,"")
+	F.Global.xml.appendnode(V.Local.sDoc(v.Local.iDoc),V.Local.snode,V.Local.sNodeVend)
+	F.Global.xml.appendTextnode(V.Local.sDoc(v.Local.iDoc),"root",V.Ambient.NewLine)
+	F.Global.xml.appendTextnode(V.Local.sDoc(v.Local.iDoc),V.Local.sNode,V.Ambient.NewLine)
+	F.Global.xml.destroyNode(V.Local.sDoc(v.Local.iDoc),V.Local.sNode)
+	V.Local.sNode.Set("")
+F.Intrinsic.Control.endif
+'save and close all the docs
+
+F.Intrinsic.Control.For(V.Local.iX,V.Local.sDoc.LBound,V.Local.sDoc.UBound,1)
+
+	F.global.xml.saveDocument(V.Local.sDoc(v.Local.iX),V.Caller.FilesDir,V.Local.sDoc(v.Local.iX))
+
+
+	F.Intrinsic.String.Concat(V.Caller.FilesDir,"\",V.Local.sDoc(v.Local.ix),V.Local.sFile)
+	F.Intrinsic.File.File2String(V.Local.sFile,V.Local.sStringFile)
+
+	F.Intrinsic.String.Instr(V.Local.sStringFile,"version= ",,V.Local.iLen)
+	F.Intrinsic.Math.Add(V.Local.iLen,19,V.Local.iLen)
+	V.Local.sHoldValue.redim(0,1)
+	F.Intrinsic.String.Left(V.Local.sStringFile,V.Local.iLen,V.Local.sHoldValue(0))
+	F.Intrinsic.Math.Add(V.Local.iLen,1,V.Local.iLen)
+	F.Intrinsic.String.Mid(V.Local.sStringFile,V.local.iLen,V.Local.sHoldValue(1))
+	F.Intrinsic.String.Concat(V.Local.sHoldValue(0)," encoding=",V.Ambient.DblQuote,"UTF-8",V.Ambient.DblQuote,"",V.local.sholdvalue(1),V.Local.sStringFile)
+
+	F.Intrinsic.String.Instr(V.Local.sStringFile,"<I3Financial ",,V.Local.iLen)
+	F.Intrinsic.Math.Add(V.Local.iLen,12,V.Local.iLen)
+	V.Local.sHoldValue.redim(0,1)
+	F.Intrinsic.String.Left(V.Local.sStringFile,V.Local.iLen,V.Local.sHoldValue(0))
+	F.Intrinsic.Math.Add(V.Local.iLen,1,V.Local.iLen)
+	F.Intrinsic.String.Mid(V.Local.sStringFile,V.local.iLen,V.Local.sHoldValue(1))
+	F.Intrinsic.String.Concat(V.Local.sHoldValue(0),"xmlns=",V.Ambient.DblQuote,"http://das.ite.iowa.gov",V.Ambient.DblQuote," ",V.local.sholdvalue(1),V.Local.sStringFile)
+	F.Intrinsic.file.String2File(V.Local.sfile,V.Local.sStringFile)
+
+	F.Intrinsic.Control.If(V.Local.sInfo,=,"")
+		V.local.sinfo.set(V.Local.sDoc(v.Local.iX))
+	F.Intrinsic.Control.ElseIf(V.Local.sInfo,<>,"")
+		F.Intrinsic.string.Concat(V.Local.sInfo,V.Ambient.NewLine,V.Local.sDoc(v.Local.iX),V.Local.sInfo)
+	F.Intrinsic.Control.endif
+	'f.global.xml.closedoc(V.Local.sDoc(v.Local.iX))
+
+F.Intrinsic.Control.Next(V.Local.iX)
+F.Intrinsic.String.Concat("Completed: ",V.Ambient.NewLine,V.Local.sInfo,V.Local.sInfo)
+F.Intrinsic.UI.Msgbox(V.Local.sinfo)
+Gui.F_Main..Visible(false)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("process_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: ATG_4075_GAX_CONVERT.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(F_main_unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.process.End
+
+program.sub.f_main_unload.start
+F.Intrinsic.Control.SetErrorHandler("f_main_unload_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("f_main_unload_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: ATG_4075_GAX_CONVERT.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+program.sub.f_main_unload.end
+
+Program.Sub.SetAttribute.Start
+F.Intrinsic.Control.SetErrorHandler("SetAttribute_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sholdvalue.Declare(String)
+
+F.Intrinsic.string.Mid(V.args.line,V.Args.start,V.Args.len,V.Local.sHoldValue)
+F.Intrinsic.Control.If(V.Local.sHoldValue.Trim,<>,"")
+	F.Global.xml.createAttributeNode(V.Args.doc,V.args.attribute,V.Local.sHoldValue.trim)
+	F.Global.xml.setattributetoNode(V.Args.doc,V.args.node,V.args.attribute)
+	F.Global.xml.destroyNode(V.Args.doc,V.args.attribute)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("SetAttribute_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: ATG_4075_GAX_CONVERT.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(F_main_unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.SetAttribute.End
+
+Program.Sub.SetAttributeRoot.Start
+F.Intrinsic.Control.SetErrorHandler("SetAttributeRoot_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+F.Global.xml.createAttributeNode(V.Args.doc,V.args.attribute,V.args.line.trim)
+F.Global.xml.setattributetoRoot(V.Args.doc,V.args.attribute)
+F.Global.xml.destroyNode(V.Args.doc,V.args.attribute)
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("SetAttributeRoot_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: ATG_4075_GAX_CONVERT.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(F_main_unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.SetAttributeRoot.End
+
+
